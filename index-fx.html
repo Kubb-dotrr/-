@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Geometry Dash Clone - Hard FX</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 30px;
+      transition: background-color 0.2s;
+    }
+    canvas {
+      border: 1px solid #000;
+      margin-top: 20px;
+    }
+    #gameOver {
+      font-size: 24px;
+      color: red;
+      margin-top: 20px;
+      display: none;
+    }
+    .flash {
+      animation: flashBg 0.3s ease-in-out;
+    }
+    @keyframes flashBg {
+      0%   { background-color: #fff; }
+      50%  { background-color: #ff0000; }
+      100% { background-color: #fff; }
+    }
+    .shake {
+      animation: shake 0.4s;
+    }
+    @keyframes shake {
+      0% { transform: translate(1px, 1px); }
+      20% { transform: translate(-2px, 0px); }
+      40% { transform: translate(3px, 2px); }
+      60% { transform: translate(-1px, -1px); }
+      80% { transform: translate(1px, 2px); }
+      100% { transform: translate(0px, 0px); }
+    }
+  </style>
+</head>
+<body>
+  <h1>Geometry Dash Clone - Hard FX</h1>
+  <canvas id="gameCanvas" width="600" height="300"></canvas>
+  <p>Click to jump</p>
+  <div id="gameOver">💀 Game Over 💀<br><button onclick="restartGame()">Restart</button></div>
+
+  <!-- Sound Effects -->
+  <audio id="jumpSound" src="https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg"></audio>
+  <audio id="hitSound" src="https://actions.google.com/sounds/v1/cartoon/concussive_hit_guitar_boing.ogg"></audio>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const jumpSound = document.getElementById("jumpSound");
+    const hitSound = document.getElementById("hitSound");
+
+    const gravity = 1.2;
+    const jumpStrength = -16;
+    const groundLevel = 200;
+    let player, obstacles, isGameOver;
+
+    function initGame() {
+      player = { x: 50, y: 150, vy: 0, jumping: false };
+      obstacles = [{ x: 400, width: 30, height: 60 }];
+      isGameOver = false;
+      document.getElementById("gameOver").style.display = "none";
+      document.body.classList.remove("shake", "flash");
+      gameLoop();
+    }
+
+    function drawPlayer() {
+      ctx.fillStyle = "blue";
+      ctx.fillRect(player.x, player.y, 30, 30);
+    }
+
+    function drawGround() {
+      ctx.fillStyle = "green";
+      ctx.fillRect(0, groundLevel + 30, canvas.width, 20);
+    }
+
+    function drawObstacles() {
+      ctx.fillStyle = "red";
+      obstacles.forEach(obs => {
+        ctx.fillRect(obs.x, groundLevel + 30 - obs.height, obs.width, obs.height);
+      });
+    }
+
+    function updatePlayer() {
+      player.vy += gravity;
+      player.y += player.vy;
+      if (player.y >= groundLevel) {
+        player.y = groundLevel;
+        player.vy = 0;
+        player.jumping = false;
+      }
+    }
+
+    function updateObstacles() {
+      for (let i = 0; i < obstacles.length; i++) {
+        obstacles[i].x -= 6;
+      }
+      while (obstacles.length && obstacles[0].x + obstacles[0].width < 0) {
+        obstacles.shift();
+      }
+    }
+
+    function checkCollision() {
+      for (let obs of obstacles) {
+        if (
+          player.x < obs.x + obs.width &&
+          player.x + 30 > obs.x &&
+          player.y + 30 > groundLevel + 30 - obs.height
+        ) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function gameLoop() {
+      if (isGameOver) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      updatePlayer();
+      updateObstacles();
+
+      if (checkCollision()) {
+        isGameOver = true;
+        hitSound.play();
+        document.body.classList.add("flash", "shake");
+        document.getElementById("gameOver").style.display = "block";
+        return;
+      }
+
+      drawGround();
+      drawObstacles();
+      drawPlayer();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function restartGame() {
+      initGame();
+    }
+
+    setInterval(() => {
+      if (!isGameOver) {
+        const height = 40 + Math.random() * 60;
+        const width = 20 + Math.random() * 40;
+        obstacles.push({ x: canvas.width, width, height });
+      }
+    }, 1300);
+
+    document.addEventListener("click", () => {
+      if (!player.jumping && !isGameOver) {
+        player.vy = jumpStrength;
+        player.jumping = true;
+        jumpSound.play();
+      }
+    });
+
+    initGame();
+  </script>
+</body>
+</html>
